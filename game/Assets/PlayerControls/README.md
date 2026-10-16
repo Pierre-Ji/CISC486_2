@@ -32,8 +32,12 @@ Nearby cover can still block the shot even when the camera can see the target.
 Hold right mouse / left trigger to show a thin, muted blue aim line. It has no glow, uses 60% opacity, respects scene depth,
 and disappears on release, disabling the player, or losing application focus. It does not cause damage.
 The line and actual shot use the same `GetShotPath` calculation: first check chest-to-muzzle obstruction,
-then trace from the muzzle toward the aim point up to weapon range. If the barrel clips through cover, the line starts
-at the chest and ends at that obstruction. Otherwise it starts at the muzzle. It always stops at the first blocker or range limit.
+then sweep from the muzzle toward the aim point up to weapon range. Both checks use a 1 cm radius, matching the
+2 cm tracer diameter, so glancing shots stop at cube edges. Each sweep first checks overlaps because Unity casts
+skip colliders containing their origin. Shooter colliders and trigger volumes are ignored.
+If the barrel clips through cover, the line starts at the chest and ends at that obstruction. Otherwise it starts
+at the muzzle. A shot starting inside cover stops immediately. Clear shots beside or above low cover still pass;
+the cubes are physical 3D obstacles, not infinitely tall walls.
 
 `AimGuide` uses **Press > Press And Release** so both hold and release reach the Send Messages callback.
 Arena floor colliders use **Ignore Raycast** (layer 2), excluded by the cursor-target mask so empty-floor aiming stays at gun height.
@@ -72,5 +76,5 @@ The arena is rebuilt from its serialized layout on entering Play mode. Edit the 
 
 Run `just test-local` from the repository root for the .NET shot-trigger regression checks.
 In Unity, open **Window > General > Test Runner > PlayMode** and run `LocalGameplayTests` for joining, device isolation,
-the player limit, damage, wall obstruction, and friendly-fire checks.
+the player limit, damage, grazing cover at multiple angles, embedded shot origins, and friendly-fire checks.
 The Unity PlayMode tests require the pinned Unity Editor and a valid license; they cannot be replaced by the .NET checks.

@@ -96,17 +96,17 @@ public class LocalGameplayTests
         var geometry = arena.transform.Find("Arena Geometry");
         Assert.That(geometry, Is.Not.Null);
         Assert.That(geometry.GetComponentsInChildren<LocalHealth>().Length, Is.EqualTo(3));
-        foreach (var health in geometry.GetComponentsInChildren<LocalHealth>())
+        foreach (Transform piece in geometry)
         {
-            var box = health.GetComponent<BoxCollider>();
+            var box = piece.GetComponent<BoxCollider>();
             Assert.That(box, Is.Not.Null);
-            var renderers = health.GetComponentsInChildren<Renderer>();
+            var renderers = piece.GetComponentsInChildren<Renderer>();
             Assert.That(renderers.Length, Is.GreaterThan(0));
             var bounds = renderers[0].bounds;
             foreach (var renderer in renderers)
                 bounds.Encapsulate(renderer.bounds);
-            Assert.That(Vector3.Distance(bounds.center, box.bounds.center), Is.LessThan(0.01f));
-            Assert.That(Vector3.Distance(bounds.size, box.bounds.size), Is.LessThan(0.01f));
+            Assert.That(Vector3.Distance(bounds.center, box.bounds.center), Is.LessThan(0.01f), piece.name);
+            Assert.That(Vector3.Distance(bounds.size, box.bounds.size), Is.LessThan(0.01f), piece.name);
         }
         Assert.That(Camera.main.orthographic, Is.True);
         foreach (var corner in new[] { new Vector3(-7f, 0f, -6f), new Vector3(7f, 0f, 6f) })
@@ -264,7 +264,7 @@ public class LocalGameplayTests
         var path = shooting.GetShotPath();
         Assert.That(guide.enabled, Is.True);
         Assert.That(path.HasHit, Is.True);
-        Assert.That(path.Hit.collider.GetComponent<LocalHealth>(), Is.SameAs(target));
+        Assert.That(path.Collider.GetComponent<LocalHealth>(), Is.SameAs(target));
         Vector3 projected = Camera.main.WorldToScreenPoint(path.End);
         Assert.That(Vector2.Distance(cursor, new Vector2(projected.x, projected.y)), Is.LessThan(1f));
         Assert.That(Vector3.Distance(guide.GetPosition(1), path.End), Is.LessThan(0.01f));
@@ -302,7 +302,7 @@ public class LocalGameplayTests
         Assert.That(shooting.TryGetMouseAimPoint(shooting.AimOrigin, out Vector3 point), Is.True);
         Assert.That(point.z, Is.GreaterThan(4f), "The camera sees the target above the cover.");
         var path = shooting.GetShotPath();
-        Assert.That(path.Hit.collider, Is.SameAs(wall.GetComponent<Collider>()));
+        Assert.That(path.Collider, Is.SameAs(wall.GetComponent<Collider>()));
         var guide = mousePlayer.transform.Find("Aim guide").GetComponent<LineRenderer>();
         Assert.That(Vector3.Distance(guide.GetPosition(1), path.End), Is.LessThan(0.01f));
         QueueMouse(cursor, 3);
@@ -389,6 +389,15 @@ public class LocalGameplayTests
         objects.Add(selfCollider);
         selfCollider.transform.SetParent(shooter.transform, false);
         selfCollider.transform.localPosition = new Vector3(0.35f, 1f, 2f);
+        var selfOverlap = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        objects.Add(selfOverlap);
+        selfOverlap.transform.SetParent(shooter.transform, false);
+        selfOverlap.transform.localPosition = Vector3.up;
+        selfOverlap.transform.localScale = Vector3.one * 2f;
+        var triggerVolume = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        objects.Add(triggerVolume);
+        triggerVolume.transform.position = shooter.AimOrigin;
+        triggerVolume.GetComponent<Collider>().isTrigger = true;
         var near = CreateTarget(new Vector3(0.35f, 1f, 4f));
         var far = CreateTarget(new Vector3(0.35f, 1f, 7f));
         Physics.SyncTransforms();
@@ -417,6 +426,78 @@ public class LocalGameplayTests
         yield return null;
         yield return null;
         Assert.That(target.CurrentHealth, Is.EqualTo(100f));
+    }
+
+    [UnityTest]
+    public IEnumerator GrazingCoverBlocksShotsAtDifferentAnglesButClearShotsStillPass()
+    {
+        yield return ClearSession();
+        foreach (float angle in new[] { 0f, 30f, 60f, 90f, 135f, 225f, 315f })
+        {
+            var shooter = CreateShooter();
+            shooter.transform.position += Vector3.right * angle;
+            shooter.transform.rotation = Quaternion.Euler(0f, angle, 0f);
+            Vector3 start = shooter.AimOrigin;
+            Vector3 forward = shooter.transform.forward;
+            Vector3 right = shooter.transform.right;
+            var target = CreateTarget(start + forward * 4f - new Vector3(100f, 0f, 100f));
+            var cover = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            objects.Add(cover);
+            cover.transform.SetPositionAndRotation(start + forward * 2f + right * 0.505f, shooter.transform.rotation);
+            cover.transform.localScale = new Vector3(1f, 2f, 0.5f);
+            Physics.SyncTransforms();
+
+            // The tracer overlaps this edge by 5 mm, while the old zero-width ray misses it.
+            Assert.That(Physics.Raycast(start, forward, out RaycastHit thinHit, 10f), Is.True);
+            Assert.That(thinHit.collider, Is.SameAs(target.GetComponent<Collider>()));
+            var path = shooter.GetShotPath();
+            Assert.That(path.Collider, Is.SameAs(cover.GetComponent<Collider>()), $"Grazing shot at {angle} degrees");
+            Assert.That(Vector3.Distance(path.Start, start), Is.LessThan(0.001f));
+            shooter.SetFirePressed(true);
+            yield return null;
+            yield return null;
+            Assert.That(target.CurrentHealth, Is.EqualTo(100f));
+
+            // A real gap beside or above the cube must remain shootable.
+            cover.transform.position = start + forward * 2f + right * 0.55f;
+            Physics.SyncTransforms();
+            Assert.That(shooter.GetShotPath().Collider, Is.SameAs(target.GetComponent<Collider>()));
+            cover.transform.localScale = Vector3.one;
+            cover.transform.position = start + forward * 2f - Vector3.up * 0.56f;
+            Physics.SyncTransforms();
+            Assert.That(shooter.GetShotPath().Collider, Is.SameAs(target.GetComponent<Collider>()));
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator EmbeddedShotOriginsCannotShootOutThroughCover()
+    {
+        yield return ClearSession();
+        foreach (float angle in new[] { 0f, 45f, 90f })
+        {
+            var shooter = CreateShooter();
+            shooter.transform.position += Vector3.right * angle;
+            shooter.transform.rotation = Quaternion.Euler(0f, angle, 0f);
+            Vector3 chest = shooter.transform.position + Vector3.up;
+            var target = CreateTarget(shooter.AimOrigin + shooter.transform.forward * 4f - new Vector3(100f, 0f, 100f));
+            var cover = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            objects.Add(cover);
+            cover.transform.position = chest;
+            cover.transform.localScale = Vector3.one * 2f;
+            Physics.SyncTransforms();
+
+            var collider = cover.GetComponent<Collider>();
+            Assert.That(Vector3.Distance(collider.ClosestPoint(chest), chest), Is.LessThan(0.001f));
+            Assert.That(Vector3.Distance(collider.ClosestPoint(shooter.AimOrigin), shooter.AimOrigin), Is.LessThan(0.001f));
+            var path = shooter.GetShotPath();
+            Assert.That(path.Collider, Is.SameAs(collider));
+            Assert.That(Vector3.Distance(path.Start, path.End), Is.LessThan(0.001f), "An embedded shot must stop immediately.");
+            Assert.That(path.Normal.sqrMagnitude, Is.GreaterThan(0.99f));
+            shooter.SetFirePressed(true);
+            yield return null;
+            yield return null;
+            Assert.That(target.CurrentHealth, Is.EqualTo(100f));
+        }
     }
 
     [UnityTest]

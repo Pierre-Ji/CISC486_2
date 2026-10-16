@@ -6,6 +6,8 @@ using UnityEngine.InputSystem;
 [DefaultExecutionOrder(50)]
 public class LocalPlayerShooting : MonoBehaviour
 {
+    // Match the visible tracer's 2 cm diameter, including grazing hits at cover edges.
+    private const float ShotRadius = 0.01f;
     [SerializeField, Min(0.01f)] private float shotInterval = 0.5f;
     [SerializeField, Min(0f)] private float damage = 25f;
     [SerializeField, Min(0.1f)] private float range = 40f;
@@ -39,15 +41,16 @@ public class LocalPlayerShooting : MonoBehaviour
     {
         public readonly Vector3 Start;
         public readonly Vector3 End;
-        public readonly RaycastHit Hit;
-        public readonly bool HasHit;
+        public readonly Collider Collider;
+        public readonly Vector3 Normal;
+        public bool HasHit => Collider != null;
 
-        public ShotPath(Vector3 start, Vector3 end, RaycastHit hit, bool hasHit)
+        public ShotPath(Vector3 start, Vector3 end, Collider collider, Vector3 normal)
         {
             Start = start;
             End = end;
-            Hit = hit;
-            HasHit = hasHit;
+            Collider = collider;
+            Normal = normal;
         }
     }
 
@@ -158,13 +161,38 @@ public class LocalPlayerShooting : MonoBehaviour
         Vector3 chest = transform.position + Vector3.up;
         Vector3 toMuzzle = muzzle.position - chest;
         // Check the barrel's path first so a muzzle poking through a wall cannot shoot through it.
-        bool hasHit = TryGetHit(chest, toMuzzle.normalized, toMuzzle.magnitude, hitMask, out RaycastHit hit);
-        if (hasHit)
-            start = chest;
-        else
-            hasHit = TryGetHit(start, direction, range, hitMask, out hit);
-        Vector3 end = hasHit ? hit.point : start + direction * range;
-        return new ShotPath(start, end, hit, hasHit);
+        ShotPath barrelPath = TraceShot(chest, toMuzzle.normalized, toMuzzle.magnitude);
+        return barrelPath.HasHit ? barrelPath : TraceShot(start, direction, range);
+    }
+
+    private ShotPath TraceShot(Vector3 origin, Vector3 direction, float distance)
+    {
+        // Unity casts skip colliders containing their origin. Check overlaps before each cast,
+        // both at the chest and at the muzzle, so an embedded barrel cannot bypass cover.
+        foreach (var collider in Physics.OverlapSphere(origin, ShotRadius, hitMask, QueryTriggerInteraction.Ignore))
+        {
+            if (collider.transform.IsChildOf(transform))
+                continue;
+            Vector3 point = collider.ClosestPoint(origin);
+            Vector3 normal = origin - point;
+            normal = normal.sqrMagnitude > 0.000001f ? normal.normalized : -direction;
+            if (normal.sqrMagnitude < 0.000001f)
+                normal = -transform.forward;
+            return new ShotPath(origin, point, collider, normal);
+        }
+
+        RaycastHit closest = default;
+        float closestDistance = float.PositiveInfinity;
+        foreach (var hit in Physics.SphereCastAll(origin, ShotRadius, direction, distance, hitMask, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.collider.transform.IsChildOf(transform) || hit.distance >= closestDistance)
+                continue;
+            closest = hit;
+            closestDistance = hit.distance;
+        }
+        return closestDistance < float.PositiveInfinity
+            ? new ShotPath(origin, closest.point, closest.collider, closest.normal)
+            : new ShotPath(origin, origin + direction * distance, null, Vector3.zero);
     }
 
     private void Shoot(ShotPath path)
@@ -179,14 +207,13 @@ public class LocalPlayerShooting : MonoBehaviour
         if (!path.HasHit)
             return;
 
-        RaycastHit hit = path.Hit;
-        var health = hit.collider.GetComponentInParent<LocalHealth>();
-        bool isPlayer = hit.collider.GetComponentInParent<PlayerInput>() != null;
+        var health = path.Collider.GetComponentInParent<LocalHealth>();
+        bool isPlayer = path.Collider.GetComponentInParent<PlayerInput>() != null;
         if (health != null && (friendlyFire || !isPlayer))
             health.TakeDamage(damage);
 
         if (impactEffect != null)
-            Destroy(Instantiate(impactEffect, hit.point, Quaternion.LookRotation(hit.normal)), 2f);
+            Destroy(Instantiate(impactEffect, path.End, Quaternion.LookRotation(path.Normal)), 2f);
     }
 
     private bool TryGetHit(Vector3 origin, Vector3 direction, float distance, int layers, out RaycastHit closest)
@@ -212,7 +239,7 @@ public class LocalPlayerShooting : MonoBehaviour
         tracer.sharedMaterial = tracerMaterial;
         tracer.useWorldSpace = true;
         tracer.positionCount = 2;
-        tracer.startWidth = tracer.endWidth = 0.02f;
+        tracer.startWidth = tracer.endWidth = ShotRadius * 2f;
         tracer.SetPosition(0, start);
         tracer.SetPosition(1, end);
         Destroy(tracer.gameObject, 0.06f);
