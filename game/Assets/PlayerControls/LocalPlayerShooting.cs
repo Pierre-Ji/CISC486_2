@@ -11,6 +11,8 @@ public class LocalPlayerShooting : MonoBehaviour
     [SerializeField] private LayerMask hitMask = ~0;
     [SerializeField] private bool friendlyFire;
     [SerializeField] private GameObject handgunVisual;
+    [SerializeField] private Vector3 handgunLocalEulerAngles = new Vector3(0f, -90f, 0f);
+    [SerializeField] private Vector3 muzzleLocalPosition = new Vector3(0f, 0.16021f, 0.249f);
     [SerializeField] private AudioClip shotSound;
     [SerializeField] private GameObject muzzleFlash;
     [SerializeField] private GameObject impactEffect;
@@ -27,16 +29,21 @@ public class LocalPlayerShooting : MonoBehaviour
         mount.SetParent(transform, false);
         mount.localPosition = new Vector3(0.35f, 1f, 0.4f);
         if (handgunVisual != null)
-            Instantiate(handgunVisual, mount, false);
+        {
+            var visual = Instantiate(handgunVisual, mount, false).transform;
+            // The template handgun's barrel points along +X; gameplay aiming uses +Z.
+            visual.localRotation = Quaternion.Euler(handgunLocalEulerAngles);
+        }
 
         muzzle = new GameObject("Muzzle").transform;
         muzzle.SetParent(mount, false);
-        muzzle.localPosition = new Vector3(0f, 0f, 0.3f);
+        muzzle.localPosition = muzzleLocalPosition;
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
     }
 
+    // Fire uses Press And Release so PlayerInput.SendMessages forwards both button edges.
     public void OnFire(InputValue value) => SetFirePressed(value.isPressed);
 
     public void SetFirePressed(bool pressed)

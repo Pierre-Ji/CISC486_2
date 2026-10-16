@@ -307,6 +307,8 @@ MonoBehaviour:
     m_Bits: 4294967295
   friendlyFire: 0
   handgunVisual: {fileID: 658741186316241116, guid: adc82374461f9a94f939a30d252baf49, type: 3}
+  handgunLocalEulerAngles: {x: 0, y: -90, z: 0}
+  muzzleLocalPosition: {x: 0, y: 0.16021, z: 0.249}
   shotSound: {fileID: 8300000, guid: 1522324874c7dbd4591dad1a91daec57, type: 3}
   muzzleFlash: {fileID: 5128621479578589028, guid: d5370334ebfc741919094c943fa694ee, type: 3}
   impactEffect: {fileID: 1000010355441670, guid: e0aa30b8adee8b44dac442776f34f5e7, type: 3}

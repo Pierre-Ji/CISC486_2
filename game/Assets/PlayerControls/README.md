@@ -15,6 +15,8 @@ Each join pairs its devices to one `PlayerInput`; automatic scheme switching is 
 Players spawn in different positions and have different body colors. Aiming is independent of movement and keeps its last direction when a stick is released.
 
 The handgun fires one shot per press, with a 0.5-second cooldown. Release and press again to fire another shot.
+The Fire action uses **Press > Press And Release** so `PlayerInput` Send Messages delivers both edges and resets the trigger.
+The handgun visual has a -90-degree Y rotation to align its +X barrel with the player's +Z aim; the muzzle is positioned independently.
 Shots deal 25 damage; each tall practice target has 100 health and disappears after four hits. Walls and other players block shots.
 Friendly fire is off by default. This first version has unlimited ammunition, with no reload, player death/respawn, enemies, or weapon switching.
 Restart Play mode to restore the practice targets. The camera is fixed; staying within the visible arena is currently up to the players.

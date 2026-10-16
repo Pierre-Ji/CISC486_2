@@ -98,6 +98,79 @@ public class LocalGameplayTests
     }
 
     [UnityTest]
+    public IEnumerator GamepadCanFireAgainAfterReleasingTrigger()
+    {
+        yield return SceneManager.LoadSceneAsync("testScene");
+        var gamepad = InputSystem.AddDevice<Gamepad>();
+        devices.Add(gamepad);
+        yield return PressStart(gamepad);
+        var player = PlayerInput.FindFirstPairedToDevice(gamepad);
+        Assert.That(player, Is.Not.Null);
+
+        player.transform.rotation = Quaternion.Euler(0f, 40f, 0f);
+        var mount = player.transform.Find("Handgun");
+        Assert.That(Vector3.Dot(mount.GetChild(0).right, player.transform.forward), Is.EqualTo(1f).Within(0.001f));
+        Assert.That(Vector3.Dot(mount.Find("Muzzle").forward, player.transform.forward), Is.EqualTo(1f).Within(0.001f));
+        yield return CheckRepeatedFire(player, gamepad);
+    }
+
+    [UnityTest]
+    public IEnumerator MouseCanFireAgainAfterReleasingButton()
+    {
+        yield return SceneManager.LoadSceneAsync("testScene");
+        var keyboard = InputSystem.AddDevice<Keyboard>();
+        var mouse = InputSystem.AddDevice<Mouse>();
+        devices.Add(keyboard);
+        devices.Add(mouse);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+        yield return null;
+        yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        var player = PlayerInput.FindFirstPairedToDevice(keyboard);
+        Assert.That(player, Is.Not.Null);
+        Mouse pairedMouse = null;
+        foreach (var device in player.devices)
+            if (device is Mouse paired)
+                pairedMouse = paired;
+        Assert.That(pairedMouse, Is.Not.Null);
+        yield return CheckRepeatedFire(player, pairedMouse);
+    }
+
+    private IEnumerator CheckRepeatedFire(PlayerInput player, InputDevice device)
+    {
+        // Exercise the real Input System -> SendMessages -> OnFire path, including release.
+        player.GetComponent<PlayerMovement>().enabled = false;
+        player.GetComponent<CharacterController>().enabled = false;
+        player.transform.SetPositionAndRotation(new Vector3(100f, 0f, 100f), Quaternion.identity);
+        var target = CreateTarget(new Vector3(0.35f, 1f, 4f));
+        Physics.SyncTransforms();
+        QueueFire(device, true);
+        yield return null;
+        yield return null;
+        Assert.That(target.CurrentHealth, Is.EqualTo(75f));
+        yield return new WaitForSeconds(0.6f);
+        Assert.That(target.CurrentHealth, Is.EqualTo(75f), "Holding must not fire repeatedly.");
+        QueueFire(device, false);
+        yield return null;
+        yield return null;
+        Assert.That(target.CurrentHealth, Is.EqualTo(75f), "Releasing must not fire a shot.");
+        QueueFire(device, true);
+        yield return null;
+        yield return null;
+        Assert.That(target.CurrentHealth, Is.EqualTo(50f), "A second press must fire another shot.");
+        QueueFire(device, false);
+        yield return null;
+    }
+
+    private static void QueueFire(InputDevice device, bool pressed)
+    {
+        if (device is Gamepad gamepad)
+            InputSystem.QueueStateEvent(gamepad, new GamepadState { rightTrigger = pressed ? 1f : 0f });
+        else if (device is Mouse mouse)
+            InputSystem.QueueStateEvent(mouse, new MouseState { buttons = (ushort)(pressed ? 1 : 0) });
+    }
+
+    [UnityTest]
     public IEnumerator HitscanDamagesNearestTargetAndIgnoresShooterColliders()
     {
         yield return ClearSession();
