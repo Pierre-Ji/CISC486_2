@@ -46,7 +46,8 @@ public class LocalGameplayTests
         Assert.That(two, Is.Not.Null);
         Assert.That(one, Is.Not.SameAs(two));
         Assert.That(one.currentControlScheme, Is.EqualTo("Gamepad"));
-        Assert.That(two.devices, Does.Not.Contain(first));
+        Assert.That(two.devices.Count, Is.EqualTo(1));
+        Assert.That(two.devices[0], Is.SameAs(second));
 
         Vector3 oneBefore = one.transform.position;
         Vector3 twoBefore = two.transform.position;
@@ -163,7 +164,7 @@ public class LocalGameplayTests
 
     private static IEnumerator ClearSession()
     {
-        foreach (var session in Object.FindObjectsByType<LocalCoopSession>(FindObjectsSortMode.None))
+        foreach (var session in Object.FindObjectsByType<LocalCoopSession>())
             Object.Destroy(session.gameObject);
         yield return null;
     }
