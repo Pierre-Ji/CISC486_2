@@ -9,6 +9,7 @@ The camera is shared; the shooter template's networked player and managers are n
 | Move | WASD | Left stick |
 | Aim | Mouse cursor | Right stick |
 | Shoot | Left mouse button | Right trigger |
+| Show aim line (hold) | Right mouse button | Left trigger |
 
 Up to four players can join: one keyboard/mouse player and up to three gamepad players, or four gamepad players.
 Each join pairs its devices to one `PlayerInput`; automatic scheme switching is disabled so controllers cannot take over another player.
@@ -16,10 +17,29 @@ Players spawn in different positions and use blue, red, orange, and white charac
 
 The handgun fires one shot per press, with a 0.5-second cooldown. Release and press again to fire another shot.
 The Fire action uses **Press > Press And Release** so `PlayerInput` Send Messages delivers both edges and resets the trigger.
-The handgun visual has a -90-degree Y rotation to align its +X barrel with the player's +Z aim; the muzzle is positioned independently.
+The handgun visual has a -90-degree Y rotation to align its +X barrel with the aim direction; the muzzle is positioned independently.
 Shots deal 25 damage; each target board has 100 health and disappears after four hits. Walls and other players block shots.
 Friendly fire is off by default. This first version has unlimited ammunition, with no reload, player death/respawn, enemies, or weapon switching.
 Restart Play mode to restore the practice targets. The shared camera frames the enclosed 14-by-12-metre arena and adjusts its view for the window aspect ratio. Perimeter walls keep players inside.
+
+## Mouse targeting and aim line
+
+The camera ray through the cursor selects the nearest target or obstacle, ignoring the shooter. When it hits no surface,
+the aim point falls on a horizontal plane at the current muzzle height. The character faces that point horizontally,
+and the barrel and shot converge toward it from the offset, animated muzzle. Gamepad aiming retains the right-stick direction.
+Nearby cover can still block the shot even when the camera can see the target.
+
+Hold right mouse / left trigger to show a thin, muted blue aim line. It has no glow, uses 60% opacity, respects scene depth,
+and disappears on release, disabling the player, or losing application focus. It does not cause damage.
+The line and actual shot use the same `GetShotPath` calculation: first check chest-to-muzzle obstruction,
+then trace from the muzzle toward the aim point up to weapon range. If the barrel clips through cover, the line starts
+at the chest and ends at that obstruction. Otherwise it starts at the muzzle. It always stops at the first blocker or range limit.
+
+`AimGuide` uses **Press > Press And Release** so both hold and release reach the Send Messages callback.
+Arena floor colliders use **Ignore Raycast** (layer 2), excluded by the cursor-target mask so empty-floor aiming stays at gun height.
+They still collide with players and bullets: the physical layer matrix and the weapon hit mask continue to include layer 2.
+For another scene, put ground colliders on that layer or exclude a dedicated ground layer from `cursorTargetMask`.
+The aim-line width and material can be tuned on `LocalPlayerShooting` in `LocalPlayer.prefab`.
 
 ## Reused template content
 

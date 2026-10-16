@@ -11,6 +11,8 @@ public class LocalGameplayTests
 {
     private readonly List<GameObject> objects = new List<GameObject>();
     private readonly List<InputDevice> devices = new List<InputDevice>();
+    private PlayerInput mousePlayer;
+    private Mouse aimingMouse;
 
     [UnityTearDown]
     public IEnumerator TearDown()
@@ -72,6 +74,16 @@ public class LocalGameplayTests
         // Rejoining with an already paired controller must not duplicate its player.
         yield return PressStart(first);
         Assert.That(PlayerInput.all.Count, Is.EqualTo(2));
+
+        InputSystem.QueueStateEvent(first, new GamepadState { leftTrigger = 1f });
+        yield return null;
+        yield return null;
+        Assert.That(one.transform.Find("Aim guide").GetComponent<LineRenderer>().enabled, Is.True);
+        Assert.That(two.transform.Find("Aim guide").GetComponent<LineRenderer>().enabled, Is.False);
+        InputSystem.QueueStateEvent(first, new GamepadState());
+        yield return null;
+        yield return null;
+        Assert.That(one.transform.Find("Aim guide").GetComponent<LineRenderer>().enabled, Is.False);
     }
 
     [UnityTest]
@@ -234,6 +246,138 @@ public class LocalGameplayTests
             InputSystem.QueueStateEvent(gamepad, new GamepadState { rightTrigger = pressed ? 1f : 0f });
         else if (device is Mouse mouse)
             InputSystem.QueueStateEvent(mouse, new MouseState { buttons = (ushort)(pressed ? 1 : 0) });
+    }
+
+    [UnityTest]
+    public IEnumerator MouseShotConvergesOnCursorAndGuideOnlyShowsWhileHeld()
+    {
+        yield return SetupMouseAimScene();
+        var target = CreateAimTarget(new Vector3(2f, 1.3f, 5f));
+        Vector3 screen = Camera.main.WorldToScreenPoint(target.transform.position);
+        Vector2 cursor = new Vector2(screen.x, screen.y);
+        QueueMouse(cursor, 2); // Right button: preview only.
+        yield return null;
+        yield return null;
+
+        var shooting = mousePlayer.GetComponent<LocalPlayerShooting>();
+        var guide = mousePlayer.transform.Find("Aim guide").GetComponent<LineRenderer>();
+        var path = shooting.GetShotPath();
+        Assert.That(guide.enabled, Is.True);
+        Assert.That(path.HasHit, Is.True);
+        Assert.That(path.Hit.collider.GetComponent<LocalHealth>(), Is.SameAs(target));
+        Vector3 projected = Camera.main.WorldToScreenPoint(path.End);
+        Assert.That(Vector2.Distance(cursor, new Vector2(projected.x, projected.y)), Is.LessThan(1f));
+        Assert.That(Vector3.Distance(guide.GetPosition(1), path.End), Is.LessThan(0.01f));
+        Assert.That(guide.startWidth, Is.LessThanOrEqualTo(0.03f));
+        Assert.That(guide.sharedMaterial.GetColor("_BaseColor").a, Is.InRange(0.4f, 0.7f));
+        Assert.That(target.CurrentHealth, Is.EqualTo(100f), "Preview must not deal damage.");
+
+        QueueMouse(cursor, 3); // Hold right button and press left to fire.
+        yield return null;
+        yield return null;
+        Assert.That(target.CurrentHealth, Is.EqualTo(75f));
+        QueueMouse(cursor, 0);
+        yield return null;
+        yield return null;
+        Assert.That(guide.enabled, Is.False, "Releasing right-click must hide the guide.");
+    }
+
+    [UnityTest]
+    public IEnumerator CursorSelectsTargetButCoverBlocksBothGuideAndDamage()
+    {
+        yield return SetupMouseAimScene();
+        var target = CreateAimTarget(new Vector3(0f, 1.3f, 5f));
+        var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        objects.Add(wall);
+        wall.transform.position = new Vector3(0f, 0.8f, 2.5f);
+        wall.transform.localScale = new Vector3(2f, 1.6f, 0.2f);
+        Physics.SyncTransforms();
+        Vector3 screen = Camera.main.WorldToScreenPoint(target.transform.position);
+        Vector2 cursor = new Vector2(screen.x, screen.y);
+        QueueMouse(cursor, 2);
+        yield return null;
+        yield return null;
+
+        var shooting = mousePlayer.GetComponent<LocalPlayerShooting>();
+        Assert.That(shooting.TryGetMouseAimPoint(shooting.AimOrigin, out Vector3 point), Is.True);
+        Assert.That(point.z, Is.GreaterThan(4f), "The camera sees the target above the cover.");
+        var path = shooting.GetShotPath();
+        Assert.That(path.Hit.collider, Is.SameAs(wall.GetComponent<Collider>()));
+        var guide = mousePlayer.transform.Find("Aim guide").GetComponent<LineRenderer>();
+        Assert.That(Vector3.Distance(guide.GetPosition(1), path.End), Is.LessThan(0.01f));
+        QueueMouse(cursor, 3);
+        yield return null;
+        yield return null;
+        Assert.That(target.CurrentHealth, Is.EqualTo(100f));
+    }
+
+    [UnityTest]
+    public IEnumerator EmptyFloorAimUsesMuzzleHeightAndGuideClearsOnDisable()
+    {
+        yield return SetupMouseAimScene();
+        Vector3 screen = Camera.main.WorldToScreenPoint(new Vector3(3f, 1.3f, 4f));
+        QueueMouse(new Vector2(screen.x, screen.y), 2);
+        yield return null;
+        yield return null;
+        var shooting = mousePlayer.GetComponent<LocalPlayerShooting>();
+        Assert.That(shooting.TryGetMouseAimPoint(shooting.AimOrigin, out Vector3 point), Is.True);
+        Assert.That(point.y, Is.EqualTo(shooting.AimOrigin.y).Within(0.001f));
+        var path = shooting.GetShotPath();
+        Assert.That(path.HasHit, Is.False);
+        Assert.That(path.End.y, Is.EqualTo(path.Start.y).Within(0.001f));
+        Assert.That(Vector3.Distance(path.Start, path.End), Is.EqualTo(40f).Within(0.01f));
+        var guide = mousePlayer.transform.Find("Aim guide").GetComponent<LineRenderer>();
+        Assert.That(guide.enabled, Is.True);
+        shooting.enabled = false;
+        Assert.That(guide.enabled, Is.False);
+    }
+
+    private IEnumerator SetupMouseAimScene()
+    {
+        yield return SceneManager.LoadSceneAsync("testScene");
+        var keyboard = InputSystem.AddDevice<Keyboard>();
+        var mouse = InputSystem.AddDevice<Mouse>();
+        devices.Add(keyboard);
+        devices.Add(mouse);
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+        yield return null;
+        yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        mousePlayer = PlayerInput.FindFirstPairedToDevice(keyboard);
+        Assert.That(mousePlayer, Is.Not.Null);
+        aimingMouse = null;
+        foreach (var device in mousePlayer.devices)
+            if (device is Mouse paired)
+                aimingMouse = paired;
+        Assert.That(aimingMouse, Is.Not.Null);
+        yield return ClearSession();
+
+        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        objects.Add(floor);
+        floor.layer = 2;
+        floor.transform.position = new Vector3(0f, -0.25f, 0f);
+        floor.transform.localScale = new Vector3(20f, 0.5f, 20f);
+        var controller = mousePlayer.GetComponent<CharacterController>();
+        controller.enabled = false;
+        mousePlayer.transform.SetPositionAndRotation(new Vector3(0f, 0.1f, 0f), Quaternion.identity);
+        controller.enabled = true;
+        Physics.SyncTransforms();
+        yield return new WaitForSeconds(0.1f);
+    }
+
+    private LocalHealth CreateAimTarget(Vector3 position)
+    {
+        var target = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        objects.Add(target);
+        target.transform.position = position;
+        target.transform.localScale = new Vector3(0.8f, 1.6f, 0.08f);
+        Physics.SyncTransforms();
+        return target.AddComponent<LocalHealth>();
+    }
+
+    private void QueueMouse(Vector2 cursor, ushort buttons)
+    {
+        InputSystem.QueueStateEvent(aimingMouse, new MouseState { position = cursor, buttons = buttons });
     }
 
     [UnityTest]

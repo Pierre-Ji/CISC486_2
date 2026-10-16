@@ -132,6 +132,11 @@ MonoBehaviour:
   muzzleFlash: {fileID: 5128621479578589028, guid: d5370334ebfc741919094c943fa694ee, type: 3}
   impactEffect: {fileID: 1000010355441670, guid: e0aa30b8adee8b44dac442776f34f5e7, type: 3}
   tracerMaterial: {fileID: 2100000, guid: 5535a13cc0550489db8af368c5d7ba75, type: 2}
+  cursorTargetMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  aimGuideMaterial: {fileID: 2100000, guid: 1d45267a79ab40ad972c75af774e1473, type: 2}
+  aimGuideWidth: 0.025
 --- !u!114 &1975118474
 MonoBehaviour:
   m_ObjectHideFlags: 0

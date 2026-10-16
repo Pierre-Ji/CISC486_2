@@ -15,10 +15,12 @@ public class PlayerMovement : MonoBehaviour
     private Camera aimCamera;
     private bool mouseAiming;
     private float verticalSpeed;
+    private LocalPlayerShooting shooting;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        shooting = GetComponent<LocalPlayerShooting>();
 
         // Spawned local co-op prefabs share the scene's main camera.
         if (viewCamera == null && Camera.main != null)
@@ -47,6 +49,15 @@ public class PlayerMovement : MonoBehaviour
     {
         mousePosition = value.Get<Vector2>();
         mouseAiming = true;
+    }
+
+    public bool TryGetMouseAimRay(out Ray ray)
+    {
+        ray = default;
+        if (!isActiveAndEnabled || !mouseAiming || aimCamera == null)
+            return false;
+        ray = aimCamera.ScreenPointToRay(mousePosition);
+        return true;
     }
 
     private void Update()
@@ -94,12 +105,16 @@ public class PlayerMovement : MonoBehaviour
         Vector3 aimDirection = Vector3.zero;
         if (mouseAiming)
         {
-            // Intersect the cursor ray with the player's horizontal plane.
-            // Recalculate after moving so a stationary cursor remains a world-space target.
-            Ray ray = aimCamera.ScreenPointToRay(mousePosition);
-            Plane aimPlane = new Plane(Vector3.up, transform.position);
-            if (aimPlane.Raycast(ray, out float distance))
-                aimDirection = ray.GetPoint(distance) - transform.position;
+            // Face the same world target used by the muzzle, rather than a point on the floor.
+            if (shooting != null && shooting.TryGetMouseAimPoint(shooting.AimOrigin, out Vector3 target))
+                aimDirection = target - transform.position;
+            else if (shooting == null)
+            {
+                Ray ray = aimCamera.ScreenPointToRay(mousePosition);
+                Plane aimPlane = new Plane(Vector3.up, transform.position + Vector3.up * 1.2f);
+                if (aimPlane.Raycast(ray, out float distance))
+                    aimDirection = ray.GetPoint(distance) - transform.position;
+            }
         }
         else if (aimInput.sqrMagnitude > 0.01f)
         {

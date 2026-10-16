@@ -58,7 +58,10 @@ public class LocalArena : MonoBehaviour
         int depth = Mathf.Max(2, floorTiles.y);
         for (int x = 0; x < width; x++)
             for (int z = 0; z < depth; z++)
-                AddPiece(geometry, floorPrefab, $"Floor {x},{z}", new Vector3(2f * x - width + 1f, -0.12f, 2f * z - depth + 1f), new Vector3(2f, 0.24f, 2f));
+            {
+                var floor = AddPiece(geometry, floorPrefab, $"Floor {x},{z}", new Vector3(2f * x - width + 1f, -0.12f, 2f * z - depth + 1f), new Vector3(2f, 0.24f, 2f));
+                floor.layer = 2; // Ignore Raycast: omit ground from cursor picking, but keep physical collision.
+            }
 
         for (int x = 0; x < width; x++)
         {
