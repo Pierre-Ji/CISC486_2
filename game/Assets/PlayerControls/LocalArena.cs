@@ -10,6 +10,7 @@ public class LocalArena : MonoBehaviour
     [SerializeField] private GameObject coverPrefab;
     [SerializeField] private GameObject targetPrefab;
     [SerializeField] private Vector2Int floorTiles = new Vector2Int(7, 6);
+    [SerializeField, Min(0.1f)] private float coverHeight = 2.2f;
     [SerializeField] private Vector3[] coverPositions = { new Vector3(-3f, 0f, -0.5f), new Vector3(3f, 0f, -0.5f) };
     [SerializeField] private Vector3[] targetPositions = { new Vector3(-4f, 0f, 3.8f), new Vector3(0f, 0f, 3.8f), new Vector3(4f, 0f, 3.8f) };
 
@@ -75,8 +76,11 @@ public class LocalArena : MonoBehaviour
             AddPiece(geometry, wallPrefab, "West wall", new Vector3(-width - 0.15f, 0.75f, position), new Vector3(0.3f, 1.5f, 2f), 90f);
             AddPiece(geometry, wallPrefab, "East wall", new Vector3(width + 0.15f, 0.75f, position), new Vector3(0.3f, 1.5f, 2f), 90f);
         }
+        // The previous 1.4 m blocks allowed shots aimed at higher points behind them to pass over.
+        // Keep the visible geometry and collider tall enough to cover the standing player's gun.
+        float height = Mathf.Max(0.1f, coverHeight);
         foreach (Vector3 position in coverPositions)
-            AddPiece(geometry, coverPrefab, "Cover", position + Vector3.up * 0.7f, new Vector3(1.5f, 1.4f, 1.5f));
+            AddPiece(geometry, coverPrefab, "Cover", position + Vector3.up * (height * 0.5f), new Vector3(1.5f, height, 1.5f));
         foreach (Vector3 position in targetPositions)
         {
             var target = AddPiece(geometry, targetPrefab, "Practice Target", position + Vector3.up * 0.9f, new Vector3(1.1f, 1.8f, 0.35f), preserveRotation: false);

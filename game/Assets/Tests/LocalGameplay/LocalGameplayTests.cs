@@ -312,6 +312,63 @@ public class LocalGameplayTests
     }
 
     [UnityTest]
+    public IEnumerator ArenaCoverBlocksShotsWhenCursorIsBeyondTheCube()
+    {
+        yield return JoinMousePlayer();
+        var arena = Object.FindFirstObjectByType<LocalArena>();
+        var cover = arena.transform.Find("Arena Geometry/Cover").GetComponent<BoxCollider>();
+        Assert.That(cover.bounds.max.y, Is.EqualTo(2.2f).Within(0.01f));
+        Assert.That(cover.bounds.min.y, Is.EqualTo(0f).Within(0.01f));
+        var shooting = mousePlayer.GetComponent<LocalPlayerShooting>();
+        var guide = mousePlayer.transform.Find("Aim guide").GetComponent<LineRenderer>();
+        var controller = mousePlayer.GetComponent<CharacterController>();
+        var positions = new[]
+        {
+            new Vector3(-3f, 0.1f, -5f),
+            new Vector3(-6f, 0.1f, -0.5f),
+            new Vector3(-0.2f, 0.1f, -0.5f)
+        };
+        var targets = new[]
+        {
+            new Vector3(-3f, 1.75f, 3.3f),
+            new Vector3(-0.3f, 1.75f, -0.5f),
+            new Vector3(-5.3f, 1.75f, -0.5f)
+        };
+        for (int i = 0; i < positions.Length; i++)
+        {
+            controller.enabled = false;
+            mousePlayer.transform.SetPositionAndRotation(positions[i], Quaternion.identity);
+            controller.enabled = true;
+            yield return new WaitForSeconds(0.1f); // Use the real animated hand/muzzle, not the test gun.
+            var target = CreateAimTarget(targets[i]);
+
+            // Check both behaviors reported: cursor on the cube and cursor on a higher target beyond it.
+            foreach (Vector3 aimPoint in new[] { cover.bounds.center, target.transform.position })
+            {
+                Vector3 screen = Camera.main.WorldToScreenPoint(aimPoint);
+                QueueMouse(new Vector2(screen.x, screen.y), 2);
+                yield return null;
+                yield return null;
+                var path = shooting.GetShotPath();
+                Assert.That(path.Collider, Is.SameAs(cover), $"Player at {positions[i]}, cursor toward {aimPoint}");
+                Assert.That(guide.enabled, Is.True);
+                Assert.That(Vector3.Distance(guide.GetPosition(1), path.End), Is.LessThan(0.01f));
+            }
+            Assert.That(shooting.TryGetMouseAimPoint(shooting.AimOrigin, out Vector3 selected), Is.True);
+            Assert.That(selected.y, Is.GreaterThan(1.7f), "Aim beyond the old 1.4 m cover, at a higher target surface.");
+            Assert.That(Vector3.Distance(selected, target.transform.position), Is.LessThan(0.1f));
+            Vector3 targetScreen = Camera.main.WorldToScreenPoint(target.transform.position);
+            QueueMouse(new Vector2(targetScreen.x, targetScreen.y), 3);
+            yield return null;
+            yield return null;
+            Assert.That(target.CurrentHealth, Is.EqualTo(100f), "Cover must block damage when the cursor is beyond it.");
+            QueueMouse(new Vector2(targetScreen.x, targetScreen.y), 0);
+            target.gameObject.SetActive(false);
+            yield return new WaitForSeconds(0.6f);
+        }
+    }
+
+    [UnityTest]
     public IEnumerator EmptyFloorAimUsesMuzzleHeightAndGuideClearsOnDisable()
     {
         yield return SetupMouseAimScene();
@@ -332,7 +389,7 @@ public class LocalGameplayTests
         Assert.That(guide.enabled, Is.False);
     }
 
-    private IEnumerator SetupMouseAimScene()
+    private IEnumerator JoinMousePlayer()
     {
         yield return SceneManager.LoadSceneAsync("testScene");
         var keyboard = InputSystem.AddDevice<Keyboard>();
@@ -350,6 +407,11 @@ public class LocalGameplayTests
             if (device is Mouse paired)
                 aimingMouse = paired;
         Assert.That(aimingMouse, Is.Not.Null);
+    }
+
+    private IEnumerator SetupMouseAimScene()
+    {
+        yield return JoinMousePlayer();
         yield return ClearSession();
 
         var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);

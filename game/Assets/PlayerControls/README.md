@@ -60,6 +60,9 @@ It blends idle/movement/strafe animations with the handgun upper-body pose, keep
 The gun receives a small recoil offset on each accepted shot. Template animation events are disabled because they expect the template's networking and sound components.
 
 `LocalArena` assembles the floor and perimeter from `WallFloorKit`, cover from `BlockKit`, and boards from `Target/Pfb_Target.prefab` when Play starts.
+The cover blocks are 2.2 m tall so they block standing handgun shots aimed at targets beyond them. The previous
+1.4 m blocks could be cleared by shots aimed at higher points behind them, even when the cursor appeared beyond a cube.
+`Cover Height` on the arena component changes both the visible block height and its collider, keeping the base on the floor.
 Visual bounds are fitted to each piece's local box collider to account for the source prefabs' FBX axes and off-center pivots. Template target timelines are disabled; `LocalHealth` controls damage.
 Select **Local Co-op Arena**, then use the **LocalArena > Rebuild Arena** component context menu for an editable preview outside Play mode.
 The arena is rebuilt from its serialized layout on entering Play mode. Edit the component's cover/target positions, tile counts, and source prefabs to change the layout; direct edits to generated pieces are replaced on rebuild.
@@ -76,5 +79,5 @@ The arena is rebuilt from its serialized layout on entering Play mode. Edit the 
 
 Run `just test-local` from the repository root for the .NET shot-trigger regression checks.
 In Unity, open **Window > General > Test Runner > PlayMode** and run `LocalGameplayTests` for joining, device isolation,
-the player limit, damage, grazing cover at multiple angles, embedded shot origins, and friendly-fire checks.
+the player limit, damage, cursor aiming beyond arena cover from multiple sides, grazing edges, embedded shot origins, and friendly-fire checks.
 The Unity PlayMode tests require the pinned Unity Editor and a valid license; they cannot be replaced by the .NET checks.

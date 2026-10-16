@@ -446,6 +446,7 @@ MonoBehaviour:
   coverPrefab: {fileID: 1491369337905334086, guid: f9e785e78d102b54591af9e386fe7be5, type: 3}
   targetPrefab: {fileID: 7754460030112438642, guid: f468de31dbdd1424b9e2a9ebfa4f4bcb, type: 3}
   floorTiles: {x: 7, y: 6}
+  coverHeight: 2.2
   coverPositions:
   - {x: -3, y: 0, z: -0.5}
   - {x: 3, y: 0, z: -0.5}
