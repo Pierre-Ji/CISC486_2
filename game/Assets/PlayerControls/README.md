@@ -1,0 +1,43 @@
+# Local co-op prototype
+
+Open `Assets/Scenes/testScene.unity` and enter Play mode. This is also the first scene in Build Settings.
+The camera is shared; the shooter template's networked player and managers are not used.
+
+| Action | Keyboard and mouse | Gamepad |
+|---|---|---|
+| Join | Enter | Start / Menu |
+| Move | WASD | Left stick |
+| Aim | Mouse cursor | Right stick |
+| Shoot | Left mouse button | Right trigger |
+
+Up to four players can join: one keyboard/mouse player and up to three gamepad players, or four gamepad players.
+Each join pairs its devices to one `PlayerInput`; automatic scheme switching is disabled so controllers cannot take over another player.
+Players spawn in different positions and have different body colors. Aiming is independent of movement and keeps its last direction when a stick is released.
+
+The handgun fires one shot per press, with a 0.5-second cooldown. Release and press again to fire another shot.
+Shots deal 25 damage; each tall practice target has 100 health and disappears after four hits. Walls and other players block shots.
+Friendly fire is off by default. This first version has unlimited ammunition, with no reload, player death/respawn, enemies, or weapon switching.
+Restart Play mode to restore the practice targets. The camera is fixed; staying within the visible arena is currently up to the players.
+
+## Reused template content
+
+`LocalPlayerShooting` adapts the template's `SingleShotMechanism` trigger/cooldown and `HitscanShooting` raycast concepts.
+It uses the existing handgun model, pistol audio clip, muzzle flash, impact effect, and tracer material.
+The local scripts live in the `LocalGameplay` assembly, which references only Unity's Input System.
+They do not use `NetworkBehaviour`, network ownership, RPCs, `ShooterAddon`, or the template's networked damage interface.
+The original Core/Shooter templates and their package dependencies remain available for reference.
+
+## Extending the prototype
+
+- `LocalCoopSession` configures `PlayerInputManager`, the join buttons, spawn positions, and four-player limit.
+- `LocalPlayer.prefab` holds movement, `PlayerInput`, and local shooting. New instances use the camera tagged `MainCamera`; an explicit movement camera reference can override it.
+- `LocalPlayerShooting` exposes damage, cooldown, range, hit layers, friendly fire, and cosmetic references in the Inspector.
+- Add `LocalHealth` to an enemy/destructible root and a collider to it or a child to receive damage. Health is initialized once when instantiated.
+- If adding player health, put `LocalHealth` on the player root; friendly fire remains disabled unless enabled on the weapon.
+
+## Validation
+
+Run `just test-local` from the repository root for the .NET shot-trigger regression checks.
+In Unity, open **Window > General > Test Runner > PlayMode** and run `LocalGameplayTests` for joining, device isolation,
+the player limit, damage, wall obstruction, and friendly-fire checks.
+The Unity PlayMode tests require the pinned Unity Editor and a valid license; they cannot be replaced by the .NET checks.

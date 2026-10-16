@@ -20,6 +20,10 @@ public class PlayerMovement : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
 
+        // Spawned local co-op prefabs share the scene's main camera.
+        if (viewCamera == null && Camera.main != null)
+            viewCamera = Camera.main.transform;
+
         if (viewCamera == null || !viewCamera.TryGetComponent(out aimCamera))
         {
             Debug.LogError("PlayerMovement requires a viewCamera reference with a Camera component.", this);

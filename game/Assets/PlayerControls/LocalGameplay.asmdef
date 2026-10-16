@@ -1,0 +1,5 @@
+{
+  "name": "LocalGameplay",
+  "references": ["Unity.InputSystem"],
+  "autoReferenced": true
+}
