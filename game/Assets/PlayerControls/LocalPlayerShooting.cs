@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 
 // Local adaptation of SingleShotMechanism and HitscanShooting. No network lifecycle is required.
 [RequireComponent(typeof(PlayerInput))]
+[DefaultExecutionOrder(50)]
 public class LocalPlayerShooting : MonoBehaviour
 {
     [SerializeField, Min(0.01f)] private float shotInterval = 0.5f;
@@ -22,6 +23,7 @@ public class LocalPlayerShooting : MonoBehaviour
     private bool shotPending;
     private Transform muzzle;
     private AudioSource audioSource;
+    public event System.Action ShotFired;
 
     private void Awake()
     {
@@ -38,6 +40,9 @@ public class LocalPlayerShooting : MonoBehaviour
         muzzle = new GameObject("Muzzle").transform;
         muzzle.SetParent(mount, false);
         muzzle.localPosition = muzzleLocalPosition;
+        var visuals = GetComponent<LocalPlayerVisuals>();
+        if (visuals != null)
+            visuals.SetWeaponMount(mount);
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
@@ -62,6 +67,7 @@ public class LocalPlayerShooting : MonoBehaviour
 
     private void Shoot()
     {
+        ShotFired?.Invoke();
         Vector3 chest = transform.position + Vector3.up;
         Vector3 toMuzzle = muzzle.position - chest;
         // Check the barrel's path first so a muzzle poking through a wall cannot shoot through it.

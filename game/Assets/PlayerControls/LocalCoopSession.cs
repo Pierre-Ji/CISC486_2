@@ -5,7 +5,7 @@ public class LocalCoopSession : MonoBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
     [SerializeField, Range(1, 4)] private int maxPlayers = 4;
-    [SerializeField] private Vector3 spawnOrigin = new Vector3(-1f, 0.1f, 0f);
+    [SerializeField] private Vector3 spawnOrigin = new Vector3(-2f, 0.1f, -3f);
     [SerializeField, Min(1f)] private float spawnSpacing = 2f;
 
     private PlayerInputManager manager;
@@ -61,11 +61,9 @@ public class LocalCoopSession : MonoBehaviour
             new Vector3(player.playerIndex % 2, 0f, -(player.playerIndex / 2)) * spawnSpacing;
         controller.enabled = true;
 
-        Color[] colors = { Color.cyan, Color.yellow, Color.magenta, Color.green };
-        var visual = player.transform.Find("Visual").GetComponent<Renderer>();
-        var properties = new MaterialPropertyBlock();
-        properties.SetColor("_BaseColor", colors[player.playerIndex % colors.Length]);
-        visual.SetPropertyBlock(properties);
+        var visuals = player.GetComponent<LocalPlayerVisuals>();
+        if (visuals != null)
+            visuals.SetPlayerIndex(player.playerIndex);
 
         if (manager.playerCount >= maxPlayers)
             manager.DisableJoining();

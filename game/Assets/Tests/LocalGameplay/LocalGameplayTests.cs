@@ -57,9 +57,73 @@ public class LocalGameplayTests
         Assert.That(two.transform.position.x, Is.EqualTo(twoBefore.x).Within(0.01f));
         Assert.That(two.transform.position.z, Is.EqualTo(twoBefore.z).Within(0.01f));
 
+        var oneVisual = one.GetComponent<LocalPlayerVisuals>();
+        var twoVisual = two.GetComponent<LocalPlayerVisuals>();
+        Assert.That(oneVisual.Animator.isHuman, Is.True);
+        Assert.That(oneVisual.Animator.applyRootMotion, Is.False);
+        Assert.That(oneVisual.Hand, Is.Not.Null);
+        var skinOne = one.GetComponentInChildren<SkinnedMeshRenderer>();
+        var skinTwo = two.GetComponentInChildren<SkinnedMeshRenderer>();
+        Assert.That(skinOne, Is.Not.Null);
+        Assert.That(skinTwo, Is.Not.Null);
+        Assert.That(skinOne.sharedMaterials[0], Is.Not.SameAs(skinTwo.sharedMaterials[0]));
+        Assert.That(Vector3.Distance(one.transform.Find("Handgun").position, oneVisual.Hand.position), Is.LessThan(0.01f));
+
         // Rejoining with an already paired controller must not duplicate its player.
         yield return PressStart(first);
         Assert.That(PlayerInput.all.Count, Is.EqualTo(2));
+    }
+
+    [UnityTest]
+    public IEnumerator ArenaHasFittedKitCollidersAndThreeDamageableTargets()
+    {
+        yield return SceneManager.LoadSceneAsync("testScene");
+        yield return null;
+        var arena = Object.FindFirstObjectByType<LocalArena>();
+        Assert.That(arena, Is.Not.Null);
+        var geometry = arena.transform.Find("Arena Geometry");
+        Assert.That(geometry, Is.Not.Null);
+        Assert.That(geometry.GetComponentsInChildren<LocalHealth>().Length, Is.EqualTo(3));
+        foreach (var health in geometry.GetComponentsInChildren<LocalHealth>())
+        {
+            var box = health.GetComponent<BoxCollider>();
+            Assert.That(box, Is.Not.Null);
+            var renderers = health.GetComponentsInChildren<Renderer>();
+            Assert.That(renderers.Length, Is.GreaterThan(0));
+            var bounds = renderers[0].bounds;
+            foreach (var renderer in renderers)
+                bounds.Encapsulate(renderer.bounds);
+            Assert.That(Vector3.Distance(bounds.center, box.bounds.center), Is.LessThan(0.01f));
+            Assert.That(Vector3.Distance(bounds.size, box.bounds.size), Is.LessThan(0.01f));
+        }
+        Assert.That(Camera.main.orthographic, Is.True);
+        foreach (var corner in new[] { new Vector3(-7f, 0f, -6f), new Vector3(7f, 0f, 6f) })
+        {
+            var viewport = Camera.main.WorldToViewportPoint(corner);
+            Assert.That(viewport.x, Is.InRange(0f, 1f));
+            Assert.That(viewport.y, Is.InRange(0f, 1f));
+        }
+        // Rebuilding a preview must replace the old colliders, rather than doubling the level.
+        arena.RebuildArena();
+        yield return null;
+        Assert.That(arena.transform.childCount, Is.EqualTo(2)); // Geometry plus the input manager.
+        Assert.That(arena.GetComponentsInChildren<LocalHealth>().Length, Is.EqualTo(3));
+    }
+
+    [UnityTest]
+    public IEnumerator PerimeterKeepsPlayersOnTheArenaFloor()
+    {
+        yield return SceneManager.LoadSceneAsync("testScene");
+        var gamepad = InputSystem.AddDevice<Gamepad>();
+        devices.Add(gamepad);
+        yield return PressStart(gamepad);
+        var player = PlayerInput.FindFirstPairedToDevice(gamepad);
+        Assert.That(player, Is.Not.Null);
+        InputSystem.QueueStateEvent(gamepad, new GamepadState { leftStick = Vector2.down });
+        yield return new WaitForSeconds(1f);
+        Assert.That(player.transform.position.z, Is.LessThan(-4f));
+        Assert.That(player.transform.position.z, Is.GreaterThan(-5.7f));
+        Assert.That(player.transform.position.y, Is.InRange(-0.2f, 0.2f));
     }
 
     [UnityTest]
@@ -142,7 +206,9 @@ public class LocalGameplayTests
         player.GetComponent<PlayerMovement>().enabled = false;
         player.GetComponent<CharacterController>().enabled = false;
         player.transform.SetPositionAndRotation(new Vector3(100f, 0f, 100f), Quaternion.identity);
-        var target = CreateTarget(new Vector3(0.35f, 1f, 4f));
+        yield return null; // Let the animated hand and weapon catch up to the teleported player.
+        var muzzle = player.transform.Find("Handgun/Muzzle");
+        var target = CreateTarget(muzzle.position + player.transform.forward * 4f - new Vector3(100f, 0f, 100f));
         Physics.SyncTransforms();
         QueueFire(device, true);
         yield return null;
