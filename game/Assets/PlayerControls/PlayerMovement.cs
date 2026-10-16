@@ -11,11 +11,20 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector2 aimInput;
+    private Vector2 mousePosition;
+    private Camera aimCamera;
+    private bool mouseAiming;
     private float verticalSpeed;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+
+        if (viewCamera == null || !viewCamera.TryGetComponent(out aimCamera))
+        {
+            Debug.LogError("PlayerMovement requires a viewCamera reference with a Camera component.", this);
+            enabled = false;
+        }
     }
 
     public void OnMove(InputValue value)
@@ -26,21 +35,39 @@ public class PlayerMovement : MonoBehaviour
     public void OnAim(InputValue value)
     {
         aimInput = value.Get<Vector2>();
+        if (aimInput.sqrMagnitude > 0.01f)
+            mouseAiming = false;
+    }
+
+    public void OnMouseAim(InputValue value)
+    {
+        mousePosition = value.Get<Vector2>();
+        mouseAiming = true;
     }
 
     private void Update()
     {
-        if (viewCamera == null)
+        if (viewCamera == null || aimCamera == null)
+        {
+            Debug.LogError("PlayerMovement lost its view camera reference.", this);
+            enabled = false;
             return;
+        }
 
         // Camera directions projected onto the arena floor.
         Vector3 forward = viewCamera.forward;
         forward.y = 0f;
-        forward.Normalize();
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            Vector3 cameraRight = Vector3.ProjectOnPlane(viewCamera.right, Vector3.up).normalized;
+            forward = Vector3.Cross(cameraRight, Vector3.up);
+        }
+        else
+        {
+            forward.Normalize();
+        }
 
-        Vector3 right = viewCamera.right;
-        right.y = 0f;
-        right.Normalize();
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
 
         // Move relative to the camera, regardless of aiming direction.
         Vector3 movement =
@@ -60,12 +87,25 @@ public class PlayerMovement : MonoBehaviour
 
         controller.Move(velocity * Time.deltaTime);
 
-        // Keep the last aiming direction when the stick is released.
-        if (aimInput.sqrMagnitude > 0.01f)
+        Vector3 aimDirection = Vector3.zero;
+        if (mouseAiming)
         {
-            Vector3 aimDirection =
-                right * aimInput.x + forward * aimInput.y;
+            // Intersect the cursor ray with the player's horizontal plane.
+            // Recalculate after moving so a stationary cursor remains a world-space target.
+            Ray ray = aimCamera.ScreenPointToRay(mousePosition);
+            Plane aimPlane = new Plane(Vector3.up, transform.position);
+            if (aimPlane.Raycast(ray, out float distance))
+                aimDirection = ray.GetPoint(distance) - transform.position;
+        }
+        else if (aimInput.sqrMagnitude > 0.01f)
+        {
+            aimDirection = right * aimInput.x + forward * aimInput.y;
+        }
 
+        // Keep the last facing direction when the stick is released or the cursor is over the player.
+        aimDirection.y = 0f;
+        if (aimDirection.sqrMagnitude > 0.0001f)
+        {
             transform.rotation =
                 Quaternion.LookRotation(aimDirection, Vector3.up);
         }
@@ -75,6 +115,7 @@ public class PlayerMovement : MonoBehaviour
     {
         moveInput = Vector2.zero;
         aimInput = Vector2.zero;
+        mouseAiming = false;
         verticalSpeed = 0f;
     }
 }
