@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Readme", menuName = "Tutorial/Readme", order = 1)]

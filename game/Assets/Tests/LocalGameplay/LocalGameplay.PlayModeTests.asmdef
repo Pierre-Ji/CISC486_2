@@ -1,0 +1,6 @@
+{
+  "name": "LocalGameplay.PlayModeTests",
+  "references": ["LocalGameplay", "Unity.InputSystem"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

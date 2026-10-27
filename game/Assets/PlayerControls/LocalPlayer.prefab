@@ -1,0 +1,168 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1975118468
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1975118469}
+  - component: {fileID: 1975118470}
+  - component: {fileID: 1975118471}
+  - component: {fileID: 1975118472}
+  - component: {fileID: 1975118473}
+  - component: {fileID: 1975118474}
+  m_Layer: 0
+  m_Name: LocalPlayer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1975118469
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!143 &1975118470
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.4
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &1975118471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
+  m_Actions: {fileID: -944628639613478452, guid: 7cf16802e3f577b4c951451214b00e2d, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 1
+  m_DefaultControlScheme:
+  m_DefaultActionMap: Gameplay
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
+--- !u!114 &1975118472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37ef70e1ca3ed4246a28584175bae2e1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: LocalGameplay::PlayerMovement
+  viewCamera: {fileID: 0}
+  moveSpeed: 6
+  gravity: -20
+--- !u!114 &1975118473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e564065bc2b48bcba6c3707722db505, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: LocalGameplay::LocalPlayerShooting
+  shotInterval: 0.5
+  damage: 25
+  range: 40
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  friendlyFire: 0
+  handgunVisual: {fileID: 658741186316241116, guid: adc82374461f9a94f939a30d252baf49, type: 3}
+  handgunLocalEulerAngles: {x: 0, y: -90, z: 0}
+  muzzleLocalPosition: {x: 0, y: 0.16021, z: 0.249}
+  shotSound: {fileID: 8300000, guid: 1522324874c7dbd4591dad1a91daec57, type: 3}
+  muzzleFlash: {fileID: 5128621479578589028, guid: d5370334ebfc741919094c943fa694ee, type: 3}
+  impactEffect: {fileID: 1000010355441670, guid: e0aa30b8adee8b44dac442776f34f5e7, type: 3}
+  tracerMaterial: {fileID: 2100000, guid: 5535a13cc0550489db8af368c5d7ba75, type: 2}
+  cursorTargetMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  aimGuideMaterial: {fileID: 2100000, guid: 1d45267a79ab40ad972c75af774e1473, type: 2}
+  aimGuideWidth: 0.025
+--- !u!114 &1975118474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975118468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da0b04c03f214defa63debe1016048e1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: LocalGameplay::LocalPlayerVisuals
+  characterModel: {fileID: 919132149155446097, guid: 23846b5d0afca4720929341f9c9fa682, type: 3}
+  animationController: {fileID: 9100000, guid: 40db3173a05ae3242b1c182a09b0a183, type: 2}
+  bodyMaterials:
+  - {fileID: 2100000, guid: 138f64fd3a5cc8d46ad707e6a9c154d5, type: 2}
+  - {fileID: 2100000, guid: 8c65089c5c7dbd645998ed8b50e8ab69, type: 2}
+  - {fileID: 2100000, guid: 9668957b5a79ab04bb6aaef9d93109f3, type: 2}
+  - {fileID: 2100000, guid: 43714b68324cc2c409d534d9874f2a2b, type: 2}
+  armMaterials:
+  - {fileID: 2100000, guid: aedca5bdcee2ef8458f81cd6a19a6b47, type: 2}
+  - {fileID: 2100000, guid: b336e7bca312004468952eba3f52dab9, type: 2}
+  - {fileID: 2100000, guid: cd59790abdf4f244dac486f17d029764, type: 2}
+  - {fileID: 2100000, guid: 0dd60f3d67ac4be4f878e4e514a93124, type: 2}
+  legMaterials:
+  - {fileID: 2100000, guid: 4426c32d69bd7a647a0ae22c3bc8ca40, type: 2}
+  - {fileID: 2100000, guid: 9cdd6d3d02684f74c9d2a397f6a9e277, type: 2}
+  - {fileID: 2100000, guid: c89fb9d4383f71547b80b6d91db3f693, type: 2}
+  - {fileID: 2100000, guid: 7f447ca8d2cada9469697b930a6e5cd2, type: 2}

@@ -75,7 +75,7 @@ namespace Blocks.Gameplay.Core
                 lookTarget = transform;
             }
 
-            if(onLookInput == null && enableLookInput)
+            if (onLookInput == null && enableLookInput)
             {
                 Debug.LogError("[CoreCameraController] Look input event is not assigned.", this);
             }

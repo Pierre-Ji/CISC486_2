@@ -135,7 +135,7 @@ namespace Blocks.Gameplay.Core
         public bool Stop(SoundDef soundDef)
         {
             bool stoppedEmitter = false;
-            for (int i=m_SoundEmitterActiveList.Count-1; i>=0; i--)
+            for (int i = m_SoundEmitterActiveList.Count - 1; i >= 0; i--)
             {
                 if (m_SoundEmitterActiveList[i].GetSoundDef() == soundDef)
                 {

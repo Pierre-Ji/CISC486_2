@@ -65,7 +65,7 @@ namespace Blocks.Sessions
 
             makeNoneElement = MakeNoneElement;
             makeItem = MakeDefaultItem;
-            makeFooter =  MakeFooter;
+            makeFooter = MakeFooter;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanelEvent);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);

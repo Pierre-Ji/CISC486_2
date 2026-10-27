@@ -21,7 +21,7 @@ namespace Blocks.Gameplay.Core
         [SerializeField] private int priority = 0;
 
         [Tooltip("Volume multiplier for this sound (0-1).")]
-        [SerializeField] [Range(0f, 1f)] private float volume = 1.0f;
+        [SerializeField][Range(0f, 1f)] private float volume = 1.0f;
 
         [Header("Playback Settings")]
         [Tooltip("If true, attaches the sound to the interactable's transform so it follows the object. If false, plays at a fixed world position.")]

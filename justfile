@@ -30,3 +30,7 @@ check:
 # Fix C# formatting
 format:
     dotnet run tools/RepoCheck.cs -- format
+
+# Test local weapon trigger behavior without launching Unity
+test-local:
+    dotnet run --project tools/LocalGameplay.Tests/LocalGameplay.Tests.csproj
