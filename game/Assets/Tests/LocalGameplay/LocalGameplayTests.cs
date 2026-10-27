@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +13,7 @@ public class LocalGameplayTests
 {
     private readonly List<GameObject> objects = new List<GameObject>();
     private readonly List<InputDevice> devices = new List<InputDevice>();
+    private readonly List<Object> assets = new List<Object>();
     private PlayerInput mousePlayer;
     private Mouse aimingMouse;
 
@@ -22,12 +25,66 @@ public class LocalGameplayTests
         foreach (var obj in objects)
             if (obj != null)
                 Object.Destroy(obj);
+        foreach (var asset in assets)
+            if (asset != null)
+                Object.Destroy(asset);
         yield return null;
         foreach (var device in devices)
             if (device.added)
                 InputSystem.RemoveDevice(device);
         objects.Clear();
         devices.Clear();
+        assets.Clear();
+    }
+
+    [UnityTest]
+    public IEnumerator MissingAndGenericAvatarsUseStaticHandAttachmentWithoutThrowing()
+    {
+        foreach (bool useGenericAvatar in new[] { false, true })
+        {
+            var source = new GameObject("Test character model");
+            objects.Add(source);
+            var hand = new GameObject("Right_Hand_Attach").transform;
+            hand.SetParent(source.transform, false);
+            hand.localPosition = new Vector3(0.3f, 1.2f, 0.5f);
+            var sourceAnimator = source.AddComponent<Animator>();
+            if (useGenericAvatar)
+            {
+                var avatar = AvatarBuilder.BuildGenericAvatar(source, "");
+                assets.Add(avatar);
+                Assert.That(avatar.isHuman, Is.False);
+                sourceAnimator.avatar = avatar;
+            }
+            var sourceMaterial = new Material(Shader.Find("Hidden/InternalErrorShader")) { name = "Body" };
+            var paletteMaterial = new Material(sourceMaterial) { name = "Player colour" };
+            assets.Add(sourceMaterial);
+            assets.Add(paletteMaterial);
+            source.AddComponent<SkinnedMeshRenderer>().sharedMaterials = new[] { sourceMaterial };
+            var animation = new AnimatorOverrideController();
+            assets.Add(animation);
+
+            var player = new GameObject("Test player with invalid avatar");
+            objects.Add(player);
+            player.SetActive(false);
+            var visuals = player.AddComponent<LocalPlayerVisuals>();
+            var fields = BindingFlags.Instance | BindingFlags.NonPublic;
+            typeof(LocalPlayerVisuals).GetField("characterModel", fields).SetValue(visuals, source);
+            typeof(LocalPlayerVisuals).GetField("animationController", fields).SetValue(visuals, animation);
+            typeof(LocalPlayerVisuals).GetField("bodyMaterials", fields).SetValue(visuals, new[] { paletteMaterial });
+            var mount = new GameObject("Test handgun").transform;
+            mount.SetParent(player.transform, false);
+            visuals.SetWeaponMount(mount);
+
+            LogAssert.Expect(LogType.Warning, new Regex("^LocalPlayerVisuals: Character has no valid humanoid Avatar;"));
+            player.SetActive(true);
+            yield return null;
+            yield return null;
+            Assert.That(visuals.Animator.enabled, Is.False);
+            Assert.That(visuals.Animator.runtimeAnimatorController, Is.Null);
+            Assert.That(visuals.Hand, Is.SameAs(player.transform.Find("Character/Right_Hand_Attach")));
+            Assert.That(Vector3.Distance(mount.position, visuals.Hand.position), Is.LessThan(0.001f));
+            Assert.That(player.transform.Find("Character").GetComponent<SkinnedMeshRenderer>().sharedMaterials[0], Is.SameAs(paletteMaterial));
+        }
     }
 
     [UnityTest]

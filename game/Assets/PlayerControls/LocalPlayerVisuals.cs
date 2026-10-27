@@ -36,6 +36,32 @@ public class LocalPlayerVisuals : MonoBehaviour
         model.transform.localPosition = Vector3.zero;
         controller = GetComponent<CharacterController>();
         animator = model.GetComponentInChildren<Animator>();
+        renderers = model.GetComponentsInChildren<SkinnedMeshRenderer>();
+        SetPlayerIndex(playerIndex);
+        // Prefer the template's grip bone. This also works if its imported Avatar is missing or generic.
+        foreach (var bone in model.GetComponentsInChildren<Transform>())
+        {
+            if (bone.name == "Right_Hand_Attach")
+            {
+                hand = bone;
+                break;
+            }
+            if (bone.name == "Right_Hand")
+                hand = bone;
+        }
+
+        if (animator == null || animator.avatar == null || !animator.avatar.isValid || !animator.avatar.isHuman)
+        {
+            if (animator != null)
+            {
+                animator.runtimeAnimatorController = null;
+                animator.enabled = false;
+            }
+            Debug.LogWarning("LocalPlayerVisuals: Character has no valid humanoid Avatar; using a static pose. " +
+                "Check the character model's Rig settings (Humanoid / Create From This Model), then reimport it.", this);
+            return;
+        }
+
         animator.runtimeAnimatorController = animationController;
         animator.applyRootMotion = false;
         animator.fireEvents = false; // Template events expect its networked animator and sound system.
@@ -43,12 +69,8 @@ public class LocalPlayerVisuals : MonoBehaviour
         animator.SetBool("IsAiming", true);
         animator.SetBool("Grounded", true);
         animator.SetInteger("WeaponTypeID", 1);
-        hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
-        foreach (var bone in model.GetComponentsInChildren<Transform>())
-            if (bone.name == "Right_Hand_Attach")
-                hand = bone;
-        renderers = model.GetComponentsInChildren<SkinnedMeshRenderer>();
-        SetPlayerIndex(playerIndex);
+        if (hand == null)
+            hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
     }
 
     private void OnEnable()
@@ -87,7 +109,7 @@ public class LocalPlayerVisuals : MonoBehaviour
 
     private void Update()
     {
-        if (animator == null || controller == null)
+        if (animator == null || !animator.isActiveAndEnabled || controller == null)
             return;
         Vector3 velocity = controller.velocity;
         float verticalSpeed = velocity.y;

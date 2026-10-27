@@ -58,6 +58,15 @@ The original Core/Shooter templates and their package dependencies remain availa
 `LocalPlayerVisuals` instantiates `Core/Art/Models/Armature.fbx` and drives the existing `ShooterAnimator.controller` with local movement velocity.
 It blends idle/movement/strafe animations with the handgun upper-body pose, keeps root motion off, and uses the animated `Right_Hand_Attach` bone for the handgun grip.
 The gun receives a small recoil offset on each accepted shot. Template animation events are disabled because they expect the template's networking and sound components.
+If the imported character has no valid humanoid Avatar, the script warns once and uses a static pose with the
+named hand attachment, while still initializing player colours and allowing movement/shooting. It only calls
+Unity's humanoid bone API after validating the Avatar.
+
+To restore animation after an Avatar import error, stop Play mode, select `Core/Art/Models/Armature.fbx`, and check
+**Rig > Animation Type: Humanoid > Avatar Definition: Create From This Model**, then **Apply** and **Reimport**.
+These settings are already checked in; if the error persists, inspect the model's Avatar configuration/import errors.
+A blank Game view can have another cause: confirm the Main Camera is enabled and its **Culling Mask** includes
+the arena/player layers. An empty **Camera** field on `PlayerInput` is expected with this shared-camera setup.
 
 `LocalArena` assembles the floor and perimeter from `WallFloorKit`, cover from `BlockKit`, and boards from `Target/Pfb_Target.prefab` when Play starts.
 The cover blocks are 2.2 m tall so they block standing handgun shots aimed at targets beyond them. The previous
