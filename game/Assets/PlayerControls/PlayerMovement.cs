@@ -89,7 +89,7 @@ public class PlayerMovement : MonoBehaviour
             right * moveInput.x + forward * moveInput.y;
 
         // Prevent diagonal keyboard movement from being faster.
-        // Preserve partial stick input for slower movement.
+
         movement = Vector3.ClampMagnitude(movement, 1f);
 
         if (controller.isGrounded && verticalSpeed < 0f)

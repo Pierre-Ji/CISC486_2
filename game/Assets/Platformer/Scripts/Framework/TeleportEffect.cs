@@ -40,7 +40,7 @@ namespace Blocks.Gameplay.Platformer
         [Tooltip("How long VFX effects should stay visible before being destroyed.")]
         [SerializeField] private float vfxDuration = 2.0f;
         [Tooltip("Volume multiplier for sound effects (0-1).")]
-        [SerializeField] [Range(0f, 1f)] private float sfxVolume = 1.0f;
+        [SerializeField][Range(0f, 1f)] private float sfxVolume = 1.0f;
 
         [Header("Movement Control")]
         [Tooltip("If true, disables player movement input during teleportation sequence.")]

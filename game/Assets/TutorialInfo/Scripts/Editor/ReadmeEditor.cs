@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -80,7 +80,7 @@ public class ReadmeEditor : Editor
     static Readme SelectReadme()
     {
         string[] readmeGuids = AssetDatabase.FindAssets("t:Readme");
-        
+
         // Prioritize the main readme at root level
         foreach (string guid in readmeGuids)
         {
@@ -95,7 +95,7 @@ public class ReadmeEditor : Editor
                 }
             }
         }
-        
+
         // Fallback to first available readme
         if (readmeGuids.Length > 0)
         {
@@ -107,7 +107,7 @@ public class ReadmeEditor : Editor
                 return readme;
             }
         }
-        
+
         return null;
     }
 

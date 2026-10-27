@@ -17,7 +17,7 @@ namespace Blocks.Gameplay.Core
         [SerializeField] private NotificationEvent notificationEvent;
 
         [Tooltip("The message to display in the notification. This will appear in the HUD's notification system.")]
-        [SerializeField] [TextArea(2, 4)] private string notificationMessage = "Interaction triggered!";
+        [SerializeField][TextArea(2, 4)] private string notificationMessage = "Interaction triggered!";
 
         [Tooltip("If true, the interactor's name will be prepended to the message (e.g., 'PlayerName: Message').")]
         [SerializeField] private bool includePlayerName = false;

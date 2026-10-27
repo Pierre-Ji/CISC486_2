@@ -64,8 +64,8 @@ namespace Blocks.Sessions.Common
                     options.WithDistributedAuthorityNetwork();
                     break;
 #else
-                        throw new InvalidOperationException(
-                            "Distributed Authority network is not supported without Netcode for Gameobjects v2.0.");
+                    throw new InvalidOperationException(
+                        "Distributed Authority network is not supported without Netcode for Gameobjects v2.0.");
 #endif
             }
         }

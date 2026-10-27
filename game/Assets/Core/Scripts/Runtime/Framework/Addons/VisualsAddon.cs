@@ -79,7 +79,7 @@ namespace Blocks.Gameplay.Core
             {
                 m_RagdollRigidbodies = ragdollRoot.GetComponentsInChildren<Rigidbody>();
                 m_RagdollColliders = ragdollRoot.GetComponentsInChildren<Collider>();
-                
+
                 // Only disable physics, keep colliders active for hit detection
                 foreach (var rb in m_RagdollRigidbodies)
                 {

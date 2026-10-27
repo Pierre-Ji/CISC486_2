@@ -22,7 +22,7 @@ namespace Blocks.Sessions
             private set
             {
                 var canJoin = value;
-                if(canJoin && m_Session != null)
+                if (canJoin && m_Session != null)
                     canJoin = false;
 
                 if (m_CanJoinSession == canJoin)

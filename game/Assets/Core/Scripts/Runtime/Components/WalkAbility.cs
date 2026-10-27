@@ -67,7 +67,7 @@ namespace Blocks.Gameplay.Core
             // If we are grounded, we check the current sprint state
             // If we are in the air and conserving momentum, we use the state from when we left the ground
             bool useSprintSpeed = m_Motor.IsGrounded ? m_Motor.IsSprinting : (conserveMomentum && m_WasSprinting);
-            
+
             // Determine the target speed based on whether the player is sprinting
             float targetSpeed = useSprintSpeed ? m_Motor.sprintSpeed : m_Motor.moveSpeed;
 
@@ -84,7 +84,7 @@ namespace Blocks.Gameplay.Core
 
             // Smoothly interpolate the current speed towards the target speed
             float speedOffset = 0.1f;
-            
+
             // Adjust acceleration/deceleration based on grounded state
             float acceleration = m_Motor.speedChangeRate;
             if (!m_Motor.IsGrounded)
@@ -132,14 +132,14 @@ namespace Blocks.Gameplay.Core
                         targetDirection = inputDirection;
                         break;
                 }
-                
+
                 // Store last valid input direction for situations where we might want to continue in that direction
                 // (Though m_CurrentVelocity helps with that too)
             }
             else if (m_CurrentVelocity.sqrMagnitude > 0.1f)
             {
-                 // If no input, direction is our current velocity direction
-                 targetDirection = m_CurrentVelocity.normalized;
+                // If no input, direction is our current velocity direction
+                targetDirection = m_CurrentVelocity.normalized;
             }
 
             // Calculate target velocity
@@ -148,21 +148,21 @@ namespace Blocks.Gameplay.Core
             // Apply smoothing to the velocity vector itself for better air control feel
             // If grounded, we track perfectly (handled by m_CurrentSpeed lerp above efficiently enough, but let's be consistent)
             // Actually, separating speed and direction logic as before is fine, but for air control we want to steer the vector.
-            
+
             if (m_Motor.IsGrounded)
             {
                 // On ground, instant direction changes are usually preferred for responsiveness
                 // The speed lerp handles the acceleration
-                 m_CurrentVelocity = targetDirection.normalized * m_CurrentSpeed;
+                m_CurrentVelocity = targetDirection.normalized * m_CurrentSpeed;
             }
             else
             {
                 // In air, we interpolate velocity vector to allow steering
                 if (m_Motor.MoveInput != Vector2.zero)
                 {
-                     // Steer towards target direction
-                     // We use airRotationSpeed to interpolate the direction
-                     m_CurrentVelocity = Vector3.Lerp(m_CurrentVelocity, targetDirection.normalized * m_CurrentSpeed, Time.deltaTime * airRotationSpeed);
+                    // Steer towards target direction
+                    // We use airRotationSpeed to interpolate the direction
+                    m_CurrentVelocity = Vector3.Lerp(m_CurrentVelocity, targetDirection.normalized * m_CurrentSpeed, Time.deltaTime * airRotationSpeed);
                 }
                 else
                 {
